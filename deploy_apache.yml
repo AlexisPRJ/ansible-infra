@@ -1,0 +1,13 @@
+---
+
+   hosts: WEB
+   tasks:
+       action: ping
+
+
+
+#     - name: install ntpdate
+#       package:
+#         name: ntpdate
+#         state: present
+# -  name : test
