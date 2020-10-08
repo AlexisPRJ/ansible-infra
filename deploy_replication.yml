@@ -1,0 +1,56 @@
+---
+- name: Install GLPI
+  hosts: DB
+  remote_user: root
+  vars:
+    mysql_root_password: "grp1"
+  tasks:
+  - name: Copy the root credentials as .my.cnf file
+    template: src=mariadb-servermaster.cnf dest=/etc/my.cnf.d/mariadb-server.cnf mode=0600
+    when: inventory_hostname == "SRV-DB1"
+  - name: Copy the root credentials as .my.cnf file
+    template: src=mariadb-serverslave.cnf dest=/etc/my.cnf.d/mariadb-server.cnf mode=0600
+    when: inventory_hostname == "SRV-DB2"
+  - name: restart mariadb *2
+    shell: systemctl restart mariadb 
+    args:
+      executable: /bin/bash
+  - block:
+     - name: run tar 
+       shell: tar -cvf /home/grp1/bk.tar /home/grp1/mariabk
+       args:
+         warn : false
+         executable: /bin/bash
+     - name: run backup 
+       shell: scp /home/grp1/bk.tar root@192.168.20.24:/home/grp1/ 
+       args:
+         executable: /bin/bash
+
+    when: inventory_hostname == "SRV-DB1"
+
+  - block:
+     - name: run backup 
+       shell: systemctl stop mariadb
+       args:
+         executable: /bin/bash
+     - name: run decom
+       shell: tar -xvf "/home/grp1/bk.tar"
+       args:
+          warn: false
+          executable: /bin/bash
+       
+
+
+    when: inventory_hostname == "SRV-DB2"
+
+#     - name: run backup 
+#       shell: systemctl stop  mariadb 
+#       args:
+#         executable: /bin/bash
+
+#     - name: run backup 
+#       shell: systemctl stop  mariadb 
+#       args:
+#         executable: /bin/bash
+
+

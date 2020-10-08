@@ -1,50 +1,89 @@
----
 - name: Install GLPI
-  hosts: TEST
+  hosts: WEB
   remote_user: root
-  vars:
-    mysql_root_password: "grp1"
   tasks:
-  - name: install mariadb
+  - name: install Epel
     yum:
       name:
-        - mariadb-server
-        - python3-PyMySQL
+        - epel-release
+        - https://rpms.remirepo.net/enterprise/remi-release-8.rpm
+      disable_gpg_check: True
+      state: present
+  - name: Reset module php
+    shell: dnf module reset php
+    args:
+      executable: /bin/bash
+      warn: false
+  - name: Enable remi Repos
+    shell: dnf module enable php:remi-7.4 -y
+    args:
+      executable: /bin/bash
+  - name: Update Repos
+    dnf:
+      name: '*'
       state: latest
-  - name: ensure that Mariadb is started
-    service:
-      name: mariadb
-      state: started
-  - name: update mysql root password for all root accounts
-    mysql_user:
-      name: root
-      host: "{{ item }}"
-      password: "{{ mysql_root_password }}"
-      login_user: root
-      login_password: "{{ mysql_root_password }}"
-      check_implicit_admin: yes
-      priv: "*.*:ALL,GRANT"
-    with_items:
-      - "{{ ansible_hostname }}"
-      - 127.0.0.1
-      - ::1
-      - localhost
-  - name: Copy the root credentials as .my.cnf file
-    template: src=root.cnf.j2 dest=~/.my.cnf mode=0600
-  - name: Create a New Test DB called MyNewDB
-    mysql_db: name=MyNewDB state=present login_user=root login_password={{ mysql_root_password }}
-
-#  - name: update mysql root password for all root accounts
-#    mysql_user:
-#      name: root
-#      password: "{{ mysql_root_password }}"
-#      login_user: root
-#      login_password: "{{ mysql_root_password }}"
-#      check_implicit_admin: yes
-#      priv: "*.*:ALL,GRANT"
-#  - name: Create a new database with name 'bobdata'
-#    mysql_db:
-#      name: bobdata
-#      state: present
-
-
+  - name: Install httpd and php
+    dnf:
+      name: 
+        - httpd
+        - php
+        - php-curl
+        - php-fileinfo
+        - php-gd
+        - php-json
+        - php-mbstring
+        - php-mysqli
+        - php-session
+        - php-zlib
+        - php-simplexml
+        - php-xml
+        - php-cli
+        - php-domxml
+        - php-imap
+        - php-ldap
+        - php-openssl
+        - php-xmlrpc
+        - php-pecl-apcu
+        - wget
+        - tar
+        - zip
+        - bzip2  
+      state: latest
+  - name: Download GLPI 9.4.5
+    shell: wget https://github.com/glpi-project/glpi/releases/download/9.4.5/glpi-9.4.5.tgz
+    args:
+      executable: /bin/bash
+  - name: EXTRACT GLPI 9.4.5
+    shell: tar xzf glpi-9.4.5.tgz -C /var/www/html/
+    args:
+      executable: /bin/bash
+  - name: Change owner
+    shell: chown -R apache:apache /var/www/html/glpi
+    args:
+      executable: /bin/bash
+  - name: Change user privilege
+    shell: chmod -R 755 /var/www/html/glpi
+    args:
+      executable: /bin/bash
+  - name: GLPI configuration for httpd
+    copy:
+      src: /home/grp1/ansible-infra/configuration-file/GLPI/glpi.conf
+      dest: /etc/httpd/conf.d/glpi.conf
+      owner: apache
+      group: apache
+      mode: u=rw,g=r,o=r
+  - name: Start GLPI
+    shell: systemctl enable httpd --now
+    args:
+      executable: /bin/bash
+  - name: Configure Selinux
+    shell: setsebool -P httpd_unified 1 && setsebool -P httpd_can_network_connect 1 && setsebool -P httpd_graceful_shutdown 1 && setsebool -P httpd_can_network_relay 1 && setsebool -P nis_enabled 1 && setsebool -P httpd_can_network_connect_db 1 && setsebool -P httpd_can_sendmail on
+    args:
+      executable: /bin/bash
+  - name: Allow HTTP in iptables
+    iptables:
+      chain: INPUT
+      protocol: tcp
+      destination_port: 80
+      jump: ACCEPT
+      action: insert

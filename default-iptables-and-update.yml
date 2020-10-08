@@ -1,0 +1,33 @@
+- name: Default configuration
+  hosts: all
+  remote_user: root
+
+  tasks:
+  - name: Update repos
+    yum:
+      name: '*'
+      state: latest
+  - name: Install iptables
+    yum:
+      name: iptables-services
+      state: latest
+  - name: Disable firewalld
+    shell: systemctl disable firewalld --now
+    args:
+      executable: /bin/bash
+  - name: Enable iptables
+    shell: systemctl enable iptables --now
+    args:
+      executable: /bin/bash
+#Change Iptables
+  - iptables:
+      chain: INPUT
+      policy: DROP
+  - name: save iptables
+    shell: iptables-save > /etc/sysconfig/iptables
+    args:
+      executable: /bin/bash
+  - name: Restart iptables
+    service:
+      name: iptables
+      state: restarted
