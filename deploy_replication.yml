@@ -6,22 +6,26 @@
     mysql_root_password: "grp1"
   tasks:
   - name: Copy the root credentials as .my.cnf file
-    template: src=mariadb-servermaster.cnf dest=/etc/my.cnf.d/mariadb-server.cnf mode=0600
+    template: src=mariadb-servermaster.cnf dest=/etc/my.cnf.d/mariadb-server.cnf 
     when: inventory_hostname == "SRV-DB1"
   - name: Copy the root credentials as .my.cnf file
-    template: src=mariadb-serverslave.cnf dest=/etc/my.cnf.d/mariadb-server.cnf mode=0600
+    template: src=mariadb-serverslave.cnf dest=/etc/my.cnf.d/mariadb-server.cnf 
     when: inventory_hostname == "SRV-DB2"
   - name: restart mariadb *2
     shell: systemctl restart mariadb 
     args:
       executable: /bin/bash
   - block:
+     - name: run backup
+       shell: mariabackup --backup --target-dir /home/grp1/mariabk -u root -p grp1
+       args:
+         executable: /bin/bash
      - name: run tar 
        shell: tar -cvf /home/grp1/bk.tar /home/grp1/mariabk
        args:
          warn : false
          executable: /bin/bash
-     - name: run backup 
+     - name: run transfert
        shell: scp /home/grp1/bk.tar root@192.168.20.24:/home/grp1/ 
        args:
          executable: /bin/bash
@@ -29,7 +33,7 @@
     when: inventory_hostname == "SRV-DB1"
 
   - block:
-     - name: run backup 
+     - name: stop mariadb
        shell: systemctl stop mariadb
        args:
          executable: /bin/bash
@@ -38,10 +42,69 @@
        args:
           warn: false
           executable: /bin/bash
-       
+     - name: deleete file in /var/lib/mysql/*
+       shell: rm -rf /var/lib/mysql/*
+       args:
+          warn: false
+          executable: /bin/bash
+     - name: run prepare restore
+       shell: mariabackup --prepare --target-dir /root/home/grp1/mariabk
+       args:
+          warn: false
+          executable: /bin/bash
+     - name: run restore
+       shell: mariabackup --copy-back --target-dir /root/home/grp1/mariabk
+       args:
+          warn: false
+          executable: /bin/bash
+     - name: run restore
+       shell: chown -R mysql:mysql /var/lib/mysql/
+       args:
+          warn: false
+          executable: /bin/bash
+     - name: start mariadb
+       shell: systemctl start mariadb
+       args: 
+         executable: /bin/bash
+     - name: Change master information in slave 
+       mysql_replication:
+         login_user: root
+         login_password: grp1
+         mode: changemaster
+         master_host: 192.168.20.23
+         master_user: root
+         master_password: grp1
+         master_log_file: mysql-bin.000001
+         master_log_pos: 328
+     - name: Start slave1
+       mysql_replication:
+        mode: startslave
+        login_user: root
+        login_password: grp1
+
 
 
     when: inventory_hostname == "SRV-DB2"
+ # - block:
+
+#      - name: test
+#        copy:
+#          src: /home/grp1/ansible-infra/configuration-file/bck_bd1
+#          dest: /home/grp1/
+#          owner: root
+#          group: root
+#          mode: u=rw,g=r,o=r
+#      - name: transfert database glpi ok
+#        shell: scp /home/grp1/ansible-infra/bck_bd1  root@192.168.20.23:/home/grp1 
+#        args:
+#         executable: /bin/bash
+#      - name: restart mariadb *2
+#        shell: mysqldump -u root -pgrp1 glpidb < /home/grp1/bck_bd1 
+#        args:
+#         executable: /bin/bash
+
+#    when: inventory_hostname == "SRV-DB1"
+ 
 
 #     - name: run backup 
 #       shell: systemctl stop  mariadb 

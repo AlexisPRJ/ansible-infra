@@ -1,8 +1,9 @@
 - name: Default configuration
-  hosts: all
+  hosts: ALL
   remote_user: root
 
   tasks:
+#Activation des regles iptables
   - name: Update repos
     yum:
       name: '*'
@@ -19,15 +20,79 @@
     shell: systemctl enable iptables --now
     args:
       executable: /bin/bash
-#Change Iptables
-  - iptables:
-      chain: INPUT
-      policy: DROP
-  - name: save iptables
-    shell: iptables-save > /etc/sysconfig/iptables
-    args:
-      executable: /bin/bash
-  - name: Restart iptables
-    service:
-      name: iptables
-      state: restarted
+  
+#SRV-DB1 Rules
+  - block:
+     - iptables:
+         chain: INPUT
+         policy: DROP
+         #- name: Ouverture des ports MariaDB depuis GLPI
+         #iptables:
+         #chain: INPUT
+         #protocol: tcp
+         #src_range: 192.168.20.20-192.168.20.22
+         #match: tcp
+         #destination_port: '3306'
+         #jump: ACCEPT
+     - name: Ouverture des ports MariaDB depuis SRV-DB2
+       iptables:
+         chain: INPUT
+         protocol: tcp
+         source: 192.168.20.24/32
+         match: tcp
+         destination_port: '3306'
+         action: insert
+         rule_num: '3'
+         jump: ACCEPT
+    when: inventory_hostname == "SRV-DB1"
+
+#SRV-DB2 Rules
+  - block:
+     - iptables:
+         chain: INPUT
+         policy: DROP
+         #- name: Ouverture des ports MariaDB depuis GLPI
+         #iptables:
+         #chain: INPUT
+         #protocol: tcp
+         #src_range: 192.168.20.20-192.168.20.22
+         #match: tcp
+         #destination_port: '3306'
+         #jump: ACCEPT
+     - name: Ouverture des ports MariaDB depuis SRV-DB1
+       iptables:
+         chain: INPUT
+         protocol: tcp
+         source: 192.168.20.23/32
+         match: tcp
+         destination_port: '3306'
+         action: insert
+         rule_num: '3'
+         jump: ACCEPT
+    when: inventory_hostname == "SRV-DB2"
+
+
+#LDAP Rules
+  - block:
+     - iptables:
+         chain: INPUT
+         policy: ACCEPT
+     - name: Ouverture du port LDAP
+       iptables:
+         chain: INPUT
+         protocol: tcp
+         src_range: 192.168.20.20-192.168.20.22
+         destination_port: '389'
+         jump: ACCEPT
+    when: inventory_hostname == "LDAP"
+
+
+#Sauvegarde & restart des iptables  
+#  - name: save iptables
+#    shell: iptables-save > /etc/sysconfig/iptables
+#    args:
+#      executable: /bin/bash
+#  - name: Restart iptables
+#    service:
+#      name: iptables
+#      state: restarted

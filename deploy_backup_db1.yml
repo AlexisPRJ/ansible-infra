@@ -1,0 +1,16 @@
+- name: Default configuration
+  hosts: DB
+  remote_user: root
+
+  tasks:
+  - name: do bck
+    shell: mysqldump -u root -pgrp1 glpidb > /home/grp1/bck_bd1
+    args:
+      executable: /bin/bash
+    ignore_errors: yes
+    when: inventory_hostname == "SRV-DB1"
+  - name: send bck to ansible 
+    shell: scp /home/grp1/bck_db1 root@192.168.20.20:/home/grp1/backup_db1/bck_db1
+    args:
+      executable: /bin/bash
+    when: inventory_hostname == "SRV-DB1"

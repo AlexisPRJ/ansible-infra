@@ -1,0 +1,17 @@
+dn: dc=ansible-infra,dc=local
+dc: ansible-infra
+objectClass: top
+objectClass: domain
+
+dn: cn=admin,dc=ansible-infra,dc=local
+objectClass: organizationalRole
+cn: admin
+description: LDAP Manager
+
+dn: ou=People,dc=ansible-infra,dc=local
+objectClass: organizationalUnit
+ou: People
+
+dn: ou=Group,dc=ansible-infra,dc=local
+objectClass: organizationalUnit
+ou: Group
