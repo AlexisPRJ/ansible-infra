@@ -1,26 +1,38 @@
 ---
 - name: Initialisation 
   hosts: WEB
-  remote_user: root
+  remote_user: grp1
   tasks:
   - name: Enable HA
+    #become: true
+    #become_method: sudo
+    #become_user: root
+    #ansible_become_pass: grp1
     shell: dnf config-manager --set-enabled HighAvailability
     args:
-      executable: /bin/bash        
+      executable: /bin/bash
+    become: yes
+    become_method: sudo 
   - name: Install Pacemaker
     dnf:
       name:
         - pcs
         - pacemaker
         - fence-agents-common
+    become: yes
+    become_method: sudo
   - name: Configuration du jeton
     shell: echo "grp1" | passwd hacluster --stdin 
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
   - name: Activation du service pcsd
     shell: systemctl enable pcsd --now
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
   - name: Configuration DNS
     copy:
       src: /home/grp1/ansible-infra/configuration-file/WEB/hosts
@@ -28,6 +40,8 @@
       owner: root
       group: root
       mode: u=rw,g=r,o=r
+    become: yes
+    become_method: sudo
   - name: Allow Cluster in iptables
     iptables:
       chain: INPUT
@@ -35,6 +49,8 @@
       destination_port: 2224
       jump: ACCEPT
       action: insert
+    become: yes
+    become_method: sudo
   - name: Allow rules cluster
     iptables:
       chain: INPUT
@@ -42,6 +58,8 @@
       destination_port: 3121
       jump: ACCEPT
       action: insert
+    become: yes
+    become_method: sudo
   - name: Allow rules cluster
     iptables:
       chain: INPUT
@@ -49,6 +67,8 @@
       destination_port: 5403
       jump: ACCEPT
       action: insert
+    become: yes
+    become_method: sudo
   - name: Allow rules cluster
     iptables:
       chain: INPUT
@@ -56,6 +76,8 @@
       destination_port: 5404
       jump: ACCEPT
       action: insert
+    become: yes
+    become_method: sudo
   - name: Allow rules cluster
     iptables:
       chain: INPUT
@@ -63,6 +85,8 @@
       destination_port: 9929
       jump: ACCEPT
       action: insert
+    become: yes
+    become_method: sudo
   - name: Allow rules cluster
     iptables:
       chain: INPUT
@@ -70,6 +94,8 @@
       destination_port: 9929
       jump: ACCEPT
       action: insert
+    become: yes
+    become_method: sudo
   - name: Allow rules cluster
     iptables:
       chain: INPUT
@@ -77,52 +103,70 @@
       destination_port: 21064
       jump: ACCEPT
       action: insert
+    become: yes
+    become_method: sudo
   - name: save iptables
     shell: iptables-save > /etc/sysconfig/iptables
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
   - name: Restart iptables
     service:
       name: iptables
       state: restarted
+    become: yes
+    become_method: sudo
 
 
 - name: Configuration pcs sur WEB1
   hosts: WEB1
-  remote_user: root
+  remote_user: grp1
   tasks:
   - name: Configuration de pcs
     shell: pcs host auth -u hacluster -p grp1 glpi-1 glpi-2
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
   - name: Creation du cluster
     shell: pcs cluster setup --start Apache_cluster glpi-1 glpi-2
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
 
 
 - name: Activations des nodes
   hosts: WEB
-  remote_user: root
+  remote_user: grp1
   tasks:
   - name: Activation du cluster hacluster
     shell: pcs cluster enable --all
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
 
 - name: COnfiguration de l'IP virtuelle
   hosts: WEB1
-  remote_user: root
+  remote_user: grp1
   tasks:
   - name: Disable stonith
     shell: pcs property set stonith-enabled=false
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
   - name: Activation de l'IP virtuelle
     shell: pcs resource create Apache_vip ocf:heartbeat:IPaddr2 ip=192.168.20.50 cidr_netmask=24 --group Apache_Grp
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
   - name: Ajout du service Apache au cluster
     shell: pcs resource create apache_ser service:httpd --group Apache_Grp
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
