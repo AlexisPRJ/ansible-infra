@@ -4,10 +4,6 @@
   remote_user: grp1
   tasks:
   - name: Enable HA
-    #become: true
-    #become_method: sudo
-    #become_user: root
-    #ansible_become_pass: grp1
     shell: dnf config-manager --set-enabled HighAvailability
     args:
       executable: /bin/bash
@@ -118,7 +114,6 @@
     become: yes
     become_method: sudo
 
-
 - name: Configuration pcs sur WEB1
   hosts: WEB1
   remote_user: grp1
@@ -135,7 +130,6 @@
       executable: /bin/bash
     become: yes
     become_method: sudo
-
 
 - name: Activations des nodes
   hosts: WEB
