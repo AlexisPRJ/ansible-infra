@@ -80,11 +80,3 @@
     shell: setsebool -P httpd_unified 1 && setsebool -P httpd_can_network_connect 1 && setsebool -P httpd_graceful_shutdown 1 && setsebool -P httpd_can_network_relay 1 && setsebool -P nis_enabled 1 && setsebool -P httpd_can_network_connect_db 1 && setsebool -P httpd_can_sendmail on
     args:
       executable: /bin/bash
-  - name: Allow HTTP in iptables
-    iptables:
-      chain: INPUT
-      protocol: tcp
-      destination_port: 80
-      jump: ACCEPT
-      action: insert
- 

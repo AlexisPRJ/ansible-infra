@@ -38,81 +38,6 @@
       mode: u=rw,g=r,o=r
     become: yes
     become_method: sudo
-  - name: Allow Cluster in iptables
-    iptables:
-      chain: INPUT
-      protocol: tcp
-      destination_port: 2224
-      jump: ACCEPT
-      action: insert
-    become: yes
-    become_method: sudo
-  - name: Allow rules cluster
-    iptables:
-      chain: INPUT
-      protocol: tcp
-      destination_port: 3121
-      jump: ACCEPT
-      action: insert
-    become: yes
-    become_method: sudo
-  - name: Allow rules cluster
-    iptables:
-      chain: INPUT
-      protocol: tcp
-      destination_port: 5403
-      jump: ACCEPT
-      action: insert
-    become: yes
-    become_method: sudo
-  - name: Allow rules cluster
-    iptables:
-      chain: INPUT
-      protocol: udp
-      destination_port: 5404
-      jump: ACCEPT
-      action: insert
-    become: yes
-    become_method: sudo
-  - name: Allow rules cluster
-    iptables:
-      chain: INPUT
-      protocol: tcp
-      destination_port: 9929
-      jump: ACCEPT
-      action: insert
-    become: yes
-    become_method: sudo
-  - name: Allow rules cluster
-    iptables:
-      chain: INPUT
-      protocol: udp
-      destination_port: 9929
-      jump: ACCEPT
-      action: insert
-    become: yes
-    become_method: sudo
-  - name: Allow rules cluster
-    iptables:
-      chain: INPUT
-      protocol: udp
-      destination_port: 21064
-      jump: ACCEPT
-      action: insert
-    become: yes
-    become_method: sudo
-  - name: save iptables
-    shell: iptables-save > /etc/sysconfig/iptables
-    args:
-      executable: /bin/bash
-    become: yes
-    become_method: sudo
-  - name: Restart iptables
-    service:
-      name: iptables
-      state: restarted
-    become: yes
-    become_method: sudo
 
 - name: Configuration pcs sur WEB1
   hosts: WEB1
@@ -142,7 +67,7 @@
     become: yes
     become_method: sudo
 
-- name: COnfiguration de l'IP virtuelle
+- name: Configuration de l'IP virtuelle
   hosts: WEB1
   remote_user: grp1
   tasks:
