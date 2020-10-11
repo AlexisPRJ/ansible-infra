@@ -1,6 +1,6 @@
 - name: Default configuration
   hosts: ALL
-  remote_user: root
+  remote_user: grp1
 
   tasks:
 #Activation des regles iptables
@@ -8,18 +8,30 @@
     yum:
       name: '*'
       state: latest
+    become: yes
+    become_method: sudo
+
   - name: Install iptables
     yum:
       name: iptables-services
       state: latest
+    become: yes
+    become_method: sudo
+
   - name: Disable firewalld
     shell: systemctl disable firewalld --now
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
+
   - name: Enable iptables
     shell: systemctl enable iptables --now
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
+
   - name: Copie des règles de bases iptables
     copy:
       src: /home/grp1/ansible-infra/configuration-file/IPTABLES/iptables
@@ -27,10 +39,15 @@
       owner: root
       group: root
       mode: u=rw
+    become: yes
+    become_method: sudo
+
   - name: Restart iptables
     shell: service iptables restart
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
 
 #SRV-DB1 Rules
   - block:
@@ -44,6 +61,8 @@
          action: insert
          jump: ACCEPT
        with_items:  [ '192.168.20.21/32', '192.168.20.22/32', '192.168.20.24/32' ]
+       become: yes
+       become_method: sudo
     when: inventory_hostname == "SRV-DB1"
 
 
@@ -59,6 +78,8 @@
          action: insert
          jump: ACCEPT
        with_items:  [ '192.168.20.21/32', '192.168.20.22/32', '192.168.20.23/32' ]
+       become: yes
+       become_method: sudo
     when: inventory_hostname == "SRV-DB2"
 
 #LDAP1 Rules
@@ -73,6 +94,8 @@
          action: insert
          jump: ACCEPT
        with_items:  [ '192.168.20.21/32', '192.168.20.22/32' ]
+       become: yes
+       become_method: sudo
     when: inventory_hostname == "SRV-LDAP-1"
 
 #LDAP2 Rules
@@ -87,6 +110,8 @@
          action: insert
          jump: ACCEPT
        with_items:  [ '192.168.20.21/32', '192.168.20.22/32' ]
+       become: yes
+       become_method: sudo
     when: inventory_hostname == "SRV-LDAP-2"
 
 
@@ -101,7 +126,10 @@
          action: insert
          jump: ACCEPT
        with_items:  [ '2224', '3121', '5403', '9929' ]
+       become: yes
+       become_method: sudo
     when: inventory_hostname == "SRV-WEB1"
+
 #Heartbeat SRV-WEB1 Rules udp
   - block:
      - name: Ouverture des flux udp heartbeat sur SRV-WEB1
@@ -113,6 +141,8 @@
          action: insert
          jump: ACCEPT
        with_items:  [ '5404', '9929', '21064' ]
+       become: yes
+       become_method: sudo
     when: inventory_hostname == "SRV-WEB1"
 
 
@@ -127,7 +157,11 @@
          action: insert
          jump: ACCEPT
        with_items:  [ '2224', '3121', '5403', '9929' ]
+       become: yes
+       become_method: sudo
     when: inventory_hostname == "SRV-WEB2"
+
+
 #Heartbeat SRV-WEB2 Rules udp
   - block:
      - name: Ouverture des flux udp heartbeat sur SRV-WEB2
@@ -139,6 +173,8 @@
          action: insert
          jump: ACCEPT
        with_items:  [ '5404', '9929', '21064' ]
+       become: yes
+       become_method: sudo
     when: inventory_hostname == "SRV-WEB2"
 
 #WEB1 Rules
@@ -150,6 +186,8 @@
          destination_port: '80'
          action: insert
          jump: ACCEPT
+       become: yes
+       become_method: sudo
     when: inventory_hostname == "SRV-WEB1"
 #WEB2 Rules
   - block:
@@ -160,6 +198,8 @@
          destination_port: '80'
          action: insert
          jump: ACCEPT
+       become: yes
+       become_method: sudo
     when: inventory_hostname == "SRV-WEB2"
 
 
