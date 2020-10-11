@@ -1,6 +1,6 @@
 - name: Install GLPI
   hosts: WEB
-  remote_user: root
+  remote_user: grp1
   tasks:
   - name: install Epel
     yum:
@@ -9,19 +9,30 @@
         - https://rpms.remirepo.net/enterprise/remi-release-8.rpm
       disable_gpg_check: True
       state: present
+    become: yes
+    become_method: sudo
+
   - name: Reset module php
     shell: dnf module reset php
     args:
       executable: /bin/bash
       warn: false
+    become: yes
+    become_method: sudo
+
   - name: Enable remi Repos
     shell: dnf module enable php:remi-7.4 -y
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
+
   - name: Update Repos
     dnf:
       name: '*'
       state: latest
+    become: yes
+    become_method: sudo
   - name: Install httpd and php
     dnf:
       name: 
@@ -49,6 +60,9 @@
         - zip
         - bzip2  
       state: latest
+    become: yes
+    become_method: sudo
+
   - name: Download GLPI 9.4.5
     shell: wget https://github.com/glpi-project/glpi/releases/download/9.4.5/glpi-9.4.5.tgz
     args:
@@ -57,14 +71,21 @@
     shell: tar xzf glpi-9.4.5.tgz -C /var/www/html/
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
+
   - name: Change owner
     shell: chown -R apache:apache /var/www/html/glpi
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
   - name: Change user privilege
     shell: chmod -R 755 /var/www/html/glpi
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
   - name: GLPI configuration for httpd
     copy:
       src: /home/grp1/ansible-infra/configuration-file/GLPI/glpi.conf
@@ -72,6 +93,8 @@
       owner: apache
       group: apache
       mode: u=rw,g=r,o=r
+    become: yes
+    become_method: sudo
 
   - block:    
      - name: Mariadb configuration WEB1
@@ -81,6 +104,8 @@
          owner: apache
          group: apache
          mode: u=rw,g=r,o=r
+       become: yes
+       become_method: sudo
     when: inventory_hostname == "SRV-WEB1"
 
 
@@ -92,13 +117,20 @@
          owner: apache
          group: apache
          mode: u=rw,g=r,o=r
+       become: yes
+       become_method: sudo
     when: inventory_hostname == "SRV-WEB2"
 
   - name: Start GLPI
     shell: systemctl enable httpd --now
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
+
   - name: Configure Selinux
     shell: setsebool -P httpd_unified 1 && setsebool -P httpd_can_network_connect 1 && setsebool -P httpd_graceful_shutdown 1 && setsebool -P httpd_can_network_relay 1 && setsebool -P nis_enabled 1 && setsebool -P httpd_can_network_connect_db 1 && setsebool -P httpd_can_sendmail on
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo

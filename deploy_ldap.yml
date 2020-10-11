@@ -1,42 +1,42 @@
 ---
 - name: Initialisation 
   hosts: LDAP
-  remote_user: root
+  remote_user: grp1
   tasks:
   - name: Copie du schema utilisateur ldap
     copy:
       src: /home/grp1/ansible-infra/configuration-file/LDAP/grp1.ldif
-      dest: /root/grp1.ldif
-      owner: root
-      group: root
+      dest: /home/grp1/grp1.ldif
+      owner: grp1
+      group: grp1
       mode: u=rw,g=r,o=r        
   - name: Copie de la configuration ldap
     copy:
       src: /home/grp1/ansible-infra/configuration-file/LDAP/base.ldif
-      dest: /root/base.ldif
-      owner: root
-      group: root
+      dest: /home/grp1/base.ldif
+      owner: grp1
+      group: grp1
       mode: u=rw,g=r,o=r
   - name: Copie de la configuration de la base ldap
     copy:
       src: /home/grp1/ansible-infra/configuration-file/LDAP/db.ldif
-      dest: /root/db.ldif
-      owner: root
-      group: root
+      dest: /home/grp1/db.ldif
+      owner: grp1
+      group: grp1
       mode: u=rw,g=r,o=r
   - name: Copie de la configuration monitor.ldif
     copy:
       src: /home/grp1/ansible-infra/configuration-file/LDAP/monitor.ldif
-      dest: /root/monitor.ldif
-      owner: root
-      group: root
+      dest: /home/grp1/monitor.ldif
+      owner: grp1
+      group: grp1
       mode: u=rw,g=r,o=r
   - name: Copie de la configuration cert.ldif
     copy:
       src: /home/grp1/ansible-infra/configuration-file/LDAP/cert.ldif
-      dest: /root/cert.ldif
-      owner: root
-      group: root
+      dest: /home/grp1/cert.ldif
+      owner: grp1
+      group: grp1
       mode: u=rw,g=r,o=r
   - name: Copie du certificat SSL pour ldaps
     copy:
@@ -45,6 +45,8 @@
       owner: root
       group: root
       mode: u=rw,g=rw,o=r
+    become: yes
+    become_method: sudo
   - name: Copie de la cle prive SSL pour ldaps
     copy:
       src: /home/grp1/ansible-infra/configuration-file/LDAP/ansible-infra.key.pem
@@ -52,6 +54,8 @@
       owner: root
       group: root
       mode: u=rw,g=rw,o=r
+    become: yes
+    become_method: sudo
   - name: Installalation des paquets openldap
     yum:
       name:
@@ -60,15 +64,23 @@
         - openldap-clients
         - openldap-servers
         - openldap-servers-sql
-        - openldap-devel  
+        - openldap-devel
+    become: yes
+    become_method: sudo
+
   - name: Activation du service SLAPD
     shell: systemctl enable slapd --now
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
+
   - name: Modification des droits SSL
     shell: chown -R ldap:ldap /etc/openldap/certs/*.pem
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
       #- name: Generation du sha
       #shell: slappasswd -s grp1 > /root/sha
       #args:
@@ -78,38 +90,60 @@
       #args:
       #executable: /bin/bash
   - name: Configuration DB dans ldap
-    shell: ldapmodify -Y EXTERNAL -H ldapi:/// -f /root/db.ldif
+    shell: ldapmodify -Y EXTERNAL -H ldapi:/// -f /home/grp1/db.ldif
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
+
   - name: Configuration MONITOR dans ldap
-    shell: ldapmodify -Y EXTERNAL -H ldapi:/// -f /root/monitor.ldif
+    shell: ldapmodify -Y EXTERNAL -H ldapi:/// -f /home/grp1/monitor.ldif
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
       # - name: Configuration CERT dans ldap
-      #shell: ldapmodify -Y EXTERNAL -H ldapi:/// -f /root/cert.ldif
+      #shell: ldapmodify -Y EXTERNAL -H ldapi:/// -f /home/grp1/cert.ldif
       #args:
       #executable: /bin/bash
   - name: Copie de la DB CONFIG
     shell: cp /usr/share/openldap-servers/DB_CONFIG.example /var/lib/ldap/DB_CONFIG
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
+
   - name: Ajout schema COSINE
     shell: ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/cosine.ldif
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
+
   - name: Ajout schema NIS
     shell: ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/nis.ldif
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
+
   - name: Ajout schema inetorgperson
     shell: ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/inetorgperson.ldif
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
+
   - name: Ajout schema BASE
     shell: ldapadd -x -w grp1 -D "cn=admin,dc=ansible-infra,dc=local" -f base.ldif
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
+
   - name: Ajout schema utilisateurs
     shell: ldapadd -x -w grp1 -D "cn=admin,dc=ansible-infra,dc=local" -f grp1.ldif && ldappasswd -s grp1 -w grp1 -D "cn=admin,dc=ansible-infra,dc=local" -x "uid=grp1,ou=People,dc=ansible-infra,dc=local"
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
