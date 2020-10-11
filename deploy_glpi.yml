@@ -72,6 +72,28 @@
       owner: apache
       group: apache
       mode: u=rw,g=r,o=r
+
+  - block:    
+     - name: Mariadb configuration WEB1
+       copy:
+         src: /home/grp1/ansible-infra/configuration-file/GLPI/web-1config_db.php
+         dest: /var/www/html/glpi/config/config_db.php
+         owner: apache
+         group: apache
+         mode: u=rw,g=r,o=r
+    when: inventory_hostname == "SRV-WEB1"
+
+
+  - block:
+     - name: Mariadb configuration WEB2
+       copy:
+         src: /home/grp1/ansible-infra/configuration-file/GLPI/web-2config_db.php
+         dest: /var/www/html/glpi/config/config_db.php
+         owner: apache
+         group: apache
+         mode: u=rw,g=r,o=r
+    when: inventory_hostname == "SRV-WEB2"
+
   - name: Start GLPI
     shell: systemctl enable httpd --now
     args:

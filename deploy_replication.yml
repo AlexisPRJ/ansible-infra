@@ -85,6 +85,20 @@
 
 
     when: inventory_hostname == "SRV-DB2"
+
+  - block:
+     - name: Copie de la base glpi
+       copy:
+         src: /home/grp1/ansible-infra/configuration-file/GLPI/glpidb.sql
+         dest: /home/grp1/glpidb.sql
+         owner: grp1
+         group: grp1
+         mode: u=rw,g=rw,o=r
+     - name: Chargement de la base GLPI
+       shell: mysql --user=root --password=grp1 glpidb < /home/grp1/glpidb.sql
+       args:
+         executable: /bin/bash
+    when: inventory_hostname == "SRV-DB1"  
  # - block:
 
 #      - name: test
