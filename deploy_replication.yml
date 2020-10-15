@@ -1,34 +1,50 @@
 ---
 - name: Install GLPI
   hosts: DB
-  remote_user: root
+  remote_user: grp1
   vars:
     mysql_root_password: "grp1"
   tasks:
   - name: Copy the root credentials as .my.cnf file
-    template: src=mariadb-servermaster.cnf dest=/etc/my.cnf.d/mariadb-server.cnf 
+    template: src=mariadb-servermaster.cnf dest=/etc/my.cnf.d/mariadb-server.cnf
+    become: yes
+    become_method: sudo
     when: inventory_hostname == "SRV-DB1"
   - name: Copy the root credentials as .my.cnf file
-    template: src=mariadb-serverslave.cnf dest=/etc/my.cnf.d/mariadb-server.cnf 
+    template: src=mariadb-serverslave.cnf dest=/etc/my.cnf.d/mariadb-server.cnf
+    become: yes
+    become_method: sudo
     when: inventory_hostname == "SRV-DB2"
+
   - name: restart mariadb *2
     shell: systemctl restart mariadb 
     args:
       executable: /bin/bash
+    become: yes
+    become_method: sudo
+
   - block:
      - name: run backup
-       shell: mariabackup --backup --target-dir /home/grp1/mariabk -u root -p grp1
+       shell: mariabackup --backup --target-dir mariabk -u root -p grp1
        args:
          executable: /bin/bash
+       become: yes
+       become_method: sudo
+
      - name: run tar 
-       shell: tar -cvf /home/grp1/bk.tar /home/grp1/mariabk
+       shell: tar -cvf bk.tar mariabk
        args:
          warn : false
          executable: /bin/bash
+       become: yes
+       become_method: sudo
+
      - name: run transfert
-       shell: scp /home/grp1/bk.tar root@192.168.20.24:/home/grp1/ 
+       shell: scp bk.tar root@192.168.20.24:/home/grp1/.
        args:
          executable: /bin/bash
+       become: yes
+       become_method: sudo
 
     when: inventory_hostname == "SRV-DB1"
 
@@ -37,35 +53,56 @@
        shell: systemctl stop mariadb
        args:
          executable: /bin/bash
+       become: yes
+       become_method: sudo
+
      - name: run decom
-       shell: tar -xvf "/home/grp1/bk.tar"
+       shell: tar -xvf "bk.tar"
        args:
           warn: false
           executable: /bin/bash
-     - name: deleete file in /var/lib/mysql/*
+       become: yes
+       become_method: sudo
+
+     - name: delete file in /var/lib/mysql/*
        shell: rm -rf /var/lib/mysql/*
        args:
           warn: false
           executable: /bin/bash
+       become: yes
+       become_method: sudo
+
      - name: run prepare restore
-       shell: mariabackup --prepare --target-dir /root/home/grp1/mariabk
+       shell: mariabackup --prepare --target-dir mariabk
        args:
           warn: false
           executable: /bin/bash
+       become: yes
+       become_method: sudo
+
      - name: run restore
-       shell: mariabackup --copy-back --target-dir /root/home/grp1/mariabk
+       shell: mariabackup --copy-back --target-dir mariabk
        args:
           warn: false
           executable: /bin/bash
+       become: yes
+       become_method: sudo
+
      - name: run restore
        shell: chown -R mysql:mysql /var/lib/mysql/
        args:
           warn: false
           executable: /bin/bash
+       become: yes
+       become_method: sudo
+
      - name: start mariadb
        shell: systemctl start mariadb
        args: 
          executable: /bin/bash
+       become: yes
+       become_method: sudo
+
      - name: Change master information in slave 
        mysql_replication:
          login_user: root

@@ -1,7 +1,7 @@
 ---
 - name: Install GLPI
   hosts: DB
-  remote_user: root
+  remote_user: grp1
   vars:
     mysql_root_password: "grp1"
   tasks:
@@ -11,10 +11,15 @@
         - mariadb-server
         - python3-PyMySQL
       state: latest
+    become: yes
+    become_method: sudo
+
   - name: ensure that Mariadb is started
     service:
       name: mariadb
       state: started
+    become: yes
+    become_method: sudo
   - name: update mysql root password for all root accounts
     mysql_user:
       name: root
@@ -33,8 +38,12 @@
       - 192.168.20.22
       - 192.168.20.24
       - 192.168.20.23
+
   - name: Copy the root credentials as .my.cnf file
     template: src=root.cnf.j2 dest=~/.my.cnf mode=0600
+    become: yes
+    become_method: sudo
+
   - name: Create a New Test DB called MyNewDB
     mysql_db: name=glpidb state=present login_user=root login_password={{ mysql_root_password }}
 
