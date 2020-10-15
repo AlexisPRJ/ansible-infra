@@ -63,10 +63,21 @@
        with_items:  [ '192.168.20.21/32', '192.168.20.22/32', '192.168.20.24/32' ]
        become: yes
        become_method: sudo
+     - name: Ouverture du port ssh pour DB2 
+       iptables:
+         chain: INPUT
+         protocol: tcp
+         source: "192.168.20.24/32"
+         match: tcp
+         destination_port: '22'
+         action: insert
+         jump: ACCEPT
+       become: yes
+       become_method: sudo
     when: inventory_hostname == "SRV-DB1"
 
 
-#SRV-DB1 Rules
+#SRV-DB2 Rules
   - block:
      - name: Ouverture des ports MariaDB pour DB1 et WEB
        iptables:
@@ -78,6 +89,17 @@
          action: insert
          jump: ACCEPT
        with_items:  [ '192.168.20.21/32', '192.168.20.22/32', '192.168.20.23/32' ]
+       become: yes
+       become_method: sudo
+     - name: Ouverture du port ssh pour DB1
+       iptables:
+         chain: INPUT
+         protocol: tcp
+         source: "192.168.20.23/32"
+         match: tcp
+         destination_port: '22'
+         action: insert
+         jump: ACCEPT
        become: yes
        become_method: sudo
     when: inventory_hostname == "SRV-DB2"
