@@ -1,15 +1,15 @@
 # Itescia ANSIBLE-INFRA
-> Le projet est de déployer une infrastructure via ansible avec l'installation de deux serveurs web qui hébergerons un glpi et de deux serveurs mariadb qui stockerons la base de donnée de glpi et d'un serveur ldap qui sera utiliser pour s'authentifier dans glpi. L'infrastructure dispose aussi d'un hearbeat permettant de faire fonctionner l'infrastructure en HA via une IP virtuelle rendant ainsi hautement disponible le serveur WEB GLPI.
+> Le projet est de déployer une infrastructure via ansible avec l'installation de deux serveurs web. Ces derniers hébergeront un glpi, les deux serveurs de bdd mariadb hébergeront la base de donnée de glpi et un serveur ldap. Ce dernier sera utiliser pour l'authentification dans glpi. L'infrastructure dispose aussi d'un hearbeat permettant de faire fonctionner l'infrastructure en HA via une IP virtuelle rendant ainsi hautement disponible le serveur WEB GLPI.
 
 ## Prérequis d'installation :
 
-> Installation des clées ssh de l'utilisateur courant de ansible sur toutes les machines pour pouvoir exécuter les playbooks
+> Installation des clées ssh de l'utilisateur courant d'ansible sur toutes les machines afin d'exécuter les playbooks
 
 ```sh
 ssh-copy-id user@192.168.20.XX
 ```
 
-> Création des clées ssh pour les bases de données à effectuer sur les deux serveurs de BDD
+> Création des clées ssh pour les bases de données, à effectuer sur les deux serveurs de BDD
 
 ```sh
 ssh-keygen
@@ -108,8 +108,8 @@ Le site est disponible en http sur le port 80 : http://192.168.20.50 (lien de GL
 * server: 192.168.20.23 et 192.168.20.24
 * Database: glpidb
 
-## Contributeurs
-* M3-Res-M1 Itescia
+## Participants
+* M3-Res-M2 Itescia
 
 * Maxime.C
 * Alexis.O
