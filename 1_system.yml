@@ -1,0 +1,236 @@
+- name: Default configuration
+  hosts: ALL
+  remote_user: grp1
+
+  tasks:
+#Activation des regles iptables
+  - name: Update repos
+    yum:
+      name: '*'
+      state: latest
+    become: yes
+    become_method: sudo
+
+  - name: Install iptables
+    yum:
+      name: iptables-services
+      state: latest
+    become: yes
+    become_method: sudo
+
+  - name: Disable firewalld
+    shell: systemctl disable firewalld --now
+    args:
+      executable: /bin/bash
+    become: yes
+    become_method: sudo
+
+  - name: Enable iptables
+    shell: systemctl enable iptables --now
+    args:
+      executable: /bin/bash
+    become: yes
+    become_method: sudo
+
+  - name: Copie des règles de bases iptables
+    copy:
+      src: /home/grp1/ansible-infra/configuration-file/IPTABLES/iptables
+      dest: /etc/sysconfig/iptables
+      owner: root
+      group: root
+      mode: u=rw
+    become: yes
+    become_method: sudo
+
+  - name: Restart iptables
+    shell: service iptables restart
+    args:
+      executable: /bin/bash
+    become: yes
+    become_method: sudo
+
+#SRV-DB1 Rules
+  - block:
+     - name: Ouverture des ports MariaDB pour DB2 et WEB
+       iptables:
+         chain: INPUT
+         protocol: tcp
+         source: "{{ item }}"
+         match: tcp
+         destination_port: '3306'
+         action: insert
+         jump: ACCEPT
+       with_items:  [ '192.168.20.21/32', '192.168.20.22/32', '192.168.20.24/32' ]
+       become: yes
+       become_method: sudo
+     - name: Ouverture du port ssh pour DB2 
+       iptables:
+         chain: INPUT
+         protocol: tcp
+         source: "192.168.20.24/32"
+         match: tcp
+         destination_port: '22'
+         action: insert
+         jump: ACCEPT
+       become: yes
+       become_method: sudo
+    when: inventory_hostname == "SRV-DB1"
+
+
+#SRV-DB2 Rules
+  - block:
+     - name: Ouverture des ports MariaDB pour DB1 et WEB
+       iptables:
+         chain: INPUT
+         protocol: tcp
+         source: "{{ item }}"
+         match: tcp
+         destination_port: '3306'
+         action: insert
+         jump: ACCEPT
+       with_items:  [ '192.168.20.21/32', '192.168.20.22/32', '192.168.20.23/32' ]
+       become: yes
+       become_method: sudo
+     - name: Ouverture du port ssh pour DB1
+       iptables:
+         chain: INPUT
+         protocol: tcp
+         source: "192.168.20.23/32"
+         match: tcp
+         destination_port: '22'
+         action: insert
+         jump: ACCEPT
+       become: yes
+       become_method: sudo
+    when: inventory_hostname == "SRV-DB2"
+
+#LDAP1 Rules
+  - block:
+     - name: Ouverture du port LDAP-1 pour WEB
+       iptables:
+         chain: INPUT
+         protocol: tcp
+         source: "{{ item }}"
+         match: tcp
+         destination_port: '389'
+         action: insert
+         jump: ACCEPT
+       with_items:  [ '192.168.20.21/32', '192.168.20.22/32' ]
+       become: yes
+       become_method: sudo
+    when: inventory_hostname == "SRV-LDAP-1"
+
+#LDAP2 Rules
+  - block:
+     - name: Ouverture du port LDAP-2 pour WEB
+       iptables:
+         chain: INPUT
+         protocol: tcp
+         source: "{{ item }}"
+         match: tcp
+         destination_port: '389'
+         action: insert
+         jump: ACCEPT
+       with_items:  [ '192.168.20.21/32', '192.168.20.22/32' ]
+       become: yes
+       become_method: sudo
+    when: inventory_hostname == "SRV-LDAP-2"
+
+
+#Heartbeat SRV-WEB1 Rules tcp
+  - block:
+     - name: Ouverture des flux tcp heartbeat sur SRV-WEB1
+       iptables:
+         chain: INPUT
+         protocol: tcp
+         source: '192.168.20.22/32'
+         destination_port: "{{ item }}"
+         action: insert
+         jump: ACCEPT
+       with_items:  [ '2224', '3121', '5403', '9929' ]
+       become: yes
+       become_method: sudo
+    when: inventory_hostname == "SRV-WEB1"
+
+#Heartbeat SRV-WEB1 Rules udp
+  - block:
+     - name: Ouverture des flux udp heartbeat sur SRV-WEB1
+       iptables:
+         chain: INPUT
+         protocol: udp
+         source: '192.168.20.22/32'
+         destination_port: "{{ item }}"
+         action: insert
+         jump: ACCEPT
+       with_items:  [ '5404', '9929', '21064' ]
+       become: yes
+       become_method: sudo
+    when: inventory_hostname == "SRV-WEB1"
+
+
+#Heartbeat SRV-WEB2 Rules tcp
+  - block:
+     - name: Ouverture des flux tcp heartbeat sur SRV-WEB2
+       iptables:
+         chain: INPUT
+         protocol: tcp
+         source: '192.168.20.21/32'
+         destination_port: "{{ item }}"
+         action: insert
+         jump: ACCEPT
+       with_items:  [ '2224', '3121', '5403', '9929' ]
+       become: yes
+       become_method: sudo
+    when: inventory_hostname == "SRV-WEB2"
+
+
+#Heartbeat SRV-WEB2 Rules udp
+  - block:
+     - name: Ouverture des flux udp heartbeat sur SRV-WEB2
+       iptables:
+         chain: INPUT
+         protocol: udp
+         source: '192.168.20.21/32'
+         destination_port: "{{ item }}"
+         action: insert
+         jump: ACCEPT
+       with_items:  [ '5404', '9929', '21064' ]
+       become: yes
+       become_method: sudo
+    when: inventory_hostname == "SRV-WEB2"
+
+#WEB1 Rules
+  - block:
+     - name: Ouverture du http sur SRV-WEB1
+       iptables:
+         chain: INPUT
+         protocol: tcp
+         destination_port: '80'
+         action: insert
+         jump: ACCEPT
+       become: yes
+       become_method: sudo
+    when: inventory_hostname == "SRV-WEB1"
+#WEB2 Rules
+  - block:
+     - name: Ouverture du http sur SRV-WEB2
+       iptables:
+         chain: INPUT
+         protocol: tcp
+         destination_port: '80'
+         action: insert
+         jump: ACCEPT
+       become: yes
+       become_method: sudo
+    when: inventory_hostname == "SRV-WEB2"
+
+
+#Sauvegarde & restart des iptables  
+#  - name: save iptables
+#    shell: iptables-save > /etc/sysconfig/iptables
+#    args:
+#      executable: /bin/bash
+#  - name: Restart iptables
+#    service:
+#      name: iptables
+#      state: restarted

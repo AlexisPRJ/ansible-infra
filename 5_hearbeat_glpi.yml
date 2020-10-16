@@ -1,0 +1,84 @@
+---
+- name: Initialisation 
+  hosts: WEB
+  remote_user: grp1
+  tasks:
+  - name: Enable HA
+    shell: dnf config-manager --set-enabled HighAvailability
+    args:
+      executable: /bin/bash
+    become: yes
+    become_method: sudo 
+  - name: Install Pacemaker
+    dnf:
+      name:
+        - pcs
+        - pacemaker
+        - fence-agents-common
+    become: yes
+    become_method: sudo
+  - name: Configuration du jeton
+    shell: echo "grp1" | passwd hacluster --stdin 
+    args:
+      executable: /bin/bash
+    become: yes
+    become_method: sudo
+  - name: Activation du service pcsd
+    shell: systemctl enable pcsd --now
+    args:
+      executable: /bin/bash
+    become: yes
+    become_method: sudo
+  - name: Configuration DNS
+    copy:
+      src: /home/grp1/ansible-infra/configuration-file/WEB/hosts
+      dest: /etc/hosts
+      owner: root
+      group: root
+      mode: u=rw,g=r,o=r
+    become: yes
+    become_method: sudo
+  - block:
+     - name: Configuration de pcs
+       shell: pcs host auth -u hacluster -p grp1 glpi-1 glpi-2
+       args:
+         executable: /bin/bash
+     - name: Creation du cluster
+       shell: pcs cluster setup --start Apache_cluster glpi-1 glpi-2
+       args:
+         executable: /bin/bash
+    become: yes
+    become_method: sudo     
+    when: inventory_hostname == "SRV-WEB1"
+
+- name: Activations des nodes
+  hosts: WEB
+  remote_user: grp1
+  tasks:
+  - name: Activation du cluster hacluster
+    shell: pcs cluster enable --all
+    args:
+      executable: /bin/bash
+    become: yes
+    become_method: sudo
+
+  - block:
+     - name: Disable stonith
+       shell: pcs property set stonith-enabled=false
+       args:
+         executable: /bin/bash
+       become: yes
+       become_method: sudo
+     - name: Activation de l'IP virtuelle
+       shell: pcs resource create Apache_vip ocf:heartbeat:IPaddr2 ip=192.168.20.50 cidr_netmask=24 --group Apache_Grp
+       args:
+         executable: /bin/bash
+       become: yes
+       become_method: sudo
+     - name: Ajout du service Apache au cluster
+       shell: pcs resource create apache_ser service:httpd --group Apache_Grp
+       args:
+         executable: /bin/bash
+       become: yes
+       become_method: sudo
+    when: inventory_hostname == "SRV-WEB2"
